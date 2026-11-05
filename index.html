@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CloudQuiz - Enterprise Architecture (TOGAF) Bahasa Indonesia</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between selection:bg-indigo-500 selection:text-white">
+
+    <!-- Background Glow -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div class="absolute -top-40 -left-40 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl"></div>
+        <div class="absolute top-1/2 -right-40 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl"></div>
+    </div>
+
+    <!-- Header / Navbar -->
+    <header class="relative z-10 border-b border-slate-800/80 bg-slate-900/50 backdrop-blur-md px-6 py-4 flex justify-between items-center">
+        <div class="flex items-center space-x-3">
+            <span class="text-2xl">🏛️</span>
+            <span class="font-bold text-lg tracking-tight bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">EA / TOGAF (ID) Quizizz</span>
+        </div>
+        <div id="quiz-header-info" class="hidden text-sm text-slate-400 font-medium">
+            Soal <span id="current-q-num" class="text-white font-bold">1</span> dari <span id="total-q-num">30</span>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="relative z-10 flex-grow flex items-center justify-center p-4 sm:p-6">
+        
+        <!-- 1. START SCREEN -->
+        <div id="start-screen" class="w-full max-w-xl bg-slate-900/80 border border-slate-800/80 p-8 rounded-3xl shadow-2xl backdrop-blur-xl text-center space-y-6">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-3xl mb-2">
+                🏢
+            </div>
+            <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
+                Enterprise Architecture <span class="text-indigo-400">Quiz (ID)</span>
+            </h1>
+            <p class="text-slate-300 text-sm sm:text-base leading-relaxed">
+                Uji pemahamanmu tentang <strong class="text-white">30 soal pilihan ganda</strong> Enterprise Architecture & TOGAF berbahasa Indonesia. Dilengkapi timer 30 detik per soal, pengacakan soal, dan review jawaban!
+            </p>
+            
+            <div class="grid grid-cols-3 gap-3 py-2">
+                <div class="bg-slate-800/50 border border-slate-700/50 p-3 rounded-2xl text-center">
+                    <div class="text-lg font-bold text-indigo-400">30</div>
+                    <div class="text-xs text-slate-400">Soal</div>
+                </div>
+                <div class="bg-slate-800/50 border border-slate-700/50 p-3 rounded-2xl text-center">
+                    <div class="text-lg font-bold text-purple-400">30s</div>
+                    <div class="text-xs text-slate-400">Timer/Soal</div>
+                </div>
+                <div class="bg-slate-800/50 border border-slate-700/50 p-3 rounded-2xl text-center">
+                    <div class="text-lg font-bold text-emerald-400">Acak</div>
+                    <div class="text-xs text-slate-400">Opsi & Soal</div>
+                </div>
+            </div>
+
+            <button onclick="startQuiz()" class="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold text-base shadow-lg shadow-indigo-500/25 hover:from-indigo-500 hover:to-purple-500 transition-all cursor-pointer transform active:scale-98">
+                Mulai Kuis EA (ID) Sekarang 🚀
+            </button>
+        </div>
+
+        <!-- 2. QUIZ SCREEN -->
+        <div id="quiz-screen" class="hidden w-full max-w-2xl bg-slate-900/80 border border-slate-800/80 p-6 sm:p-8 rounded-3xl shadow-2xl backdrop-blur-xl space-y-6">
+            <div class="space-y-3">
+                <div class="flex justify-between items-center text-xs sm:text-sm font-medium text-slate-400">
+                    <div class="flex items-center space-x-2">
+                        <span class="inline-block w-2.5 h-2.5 rounded-full bg-indigo-500 animate-pulse"></span>
+                        <span id="progress-text">Soal 1 dari 30</span>
+                    </div>
+                    <div id="timer-box" class="flex items-center space-x-1.5 bg-slate-800 px-3 py-1 rounded-full border border-slate-700 text-slate-200">
+                        <span>⏳</span>
+                        <span id="time-left" class="font-bold text-indigo-400">30</span>s
+                    </div>
+                </div>
+                <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                    <div id="progress-bar" class="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-300" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <h2 id="question-text" class="text-lg sm:text-xl font-semibold text-white leading-relaxed">
+                    Memuat pertanyaan...
+                </h2>
+            </div>
+
+            <div id="options-container" class="space-y-3"></div>
+
+            <div id="explanation-box" class="hidden p-4 rounded-2xl bg-slate-800/70 border border-slate-700/80 text-sm space-y-1">
+                <div class="font-semibold text-indigo-300 flex items-center space-x-1.5">
+                    <span>💡</span>
+                    <span>Penjelasan</span>
+                </div>
+                <p id="explanation-text" class="text-slate-300"></p>
+            </div>
+
+            <div class="flex justify-end pt-2">
+                <button id="next-btn" onclick="nextQuestion()" class="hidden py-3 px-6 rounded-xl bg-indigo-600 text-white font-semibold text-sm shadow-md hover:bg-indigo-500 transition-all cursor-pointer">
+                    Soal Selanjutnya ➔
+                </button>
+            </div>
+        </div>
+
+        <!-- 3. RESULT SCREEN -->
+        <div id="result-screen" class="hidden w-full max-w-2xl bg-slate-900/80 border border-slate-800/80 p-6 sm:p-8 rounded-3xl shadow-2xl backdrop-blur-xl space-y-6">
+            <div class="text-center space-y-3">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-3xl">
+                    🏆
+                </div>
+                <h2 class="text-2xl sm:text-3xl font-bold text-white">Kuis Selesai!</h2>
+                <p class="text-slate-400 text-sm">Berikut adalah hasil evaluasi pengerjaan kuis Enterprise Architecture kamu.</p>
+                
+                <div class="py-4">
+                    <div class="text-5xl font-extrabold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent" id="final-score-percent">0%</div>
+                    <div class="text-xs uppercase tracking-wider text-slate-500 mt-1">Skor Akhir</div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-slate-800/50 border border-slate-700/50 p-4 rounded-2xl text-center">
+                        <div class="text-2xl font-bold text-emerald-400" id="final-correct">0</div>
+                        <div class="text-xs text-slate-400 mt-0.5">✅ Benar</div>
+                    </div>
+                    <div class="bg-slate-800/50 border border-slate-700/50 p-4 rounded-2xl text-center">
+                        <div class="text-2xl font-bold text-rose-400" id="final-wrong">0</div>
+                        <div class="text-xs text-slate-400 mt-0.5">❌ Salah / Kosong</div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-3 pt-2">
+                    <button onclick="restartQuiz()" class="flex-1 py-3 px-6 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-sm border border-slate-700 transition-all cursor-pointer">
+                        🔄 Ulangi Kuis
+                    </button>
+                    <button onclick="showReviewScreen()" class="flex-1 py-3 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-md transition-all cursor-pointer">
+                        📋 Review Jawaban
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. REVIEW SCREEN -->
+        <div id="review-screen" class="hidden w-full max-w-3xl bg-slate-900/80 border border-slate-800/80 p-6 sm:p-8 rounded-3xl shadow-2xl backdrop-blur-xl space-y-6">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-4">
+                <div>
+                    <h3 class="text-xl font-bold text-white">Review Semua Jawaban</h3>
+                    <p class="text-xs text-slate-400">Periksa kembali jawaban benar dan pilihanmu.</p>
+                </div>
+                <button onclick="backToResult()" class="py-2 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-all cursor-pointer">
+                    Kembali ke Skor ↩
+                </button>
+            </div>
+            
+            <div id="review-list" class="space-y-4 max-h-[60vh] overflow-y-auto pr-2"></div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="relative z-10 text-center py-4 text-xs text-slate-500 border-t border-slate-900">
+        Enterprise Architecture (TOGAF) ID • Quizizz App Generator
+    </footer>
+
+    <!-- Quiz Logic Script -->
+    <script>
+        const rawQuestions = [{"question": "Manakah dari pilihan berikut yang merupakan definisi arsitektur?", "options": ["...aset", "Organisasi fundamental dari sebuah sistem, yang diwujudkan dalam komponen-komponennya, hubungan antarkomponen dan dengan lingkungannya, serta prinsip-prinsip yang mengatur desain dan evolusinya", "Metode dan alat untuk membantu penerimaan, pembuatan, penggunaan, dan pemeliharaan sebuah enterprise architecture", "Cetak biru (blueprint) untuk masing-masing aplikasi yang akan di-deploy, interaksinya, dan hubungannya dengan proses bisnis inti organisasi"], "answer": 1, "explanation": "Jawaban yang benar adalah opsi B."}, {"question": "Menurut TOGAF, manakah yang paling tepat menggambarkan enterprise architecture?", "options": ["Arsitektur dari sebuah organisasi komersial", "Arsitektur yang terdiri dari lebih dari satu anak perusahaan", "Arsitektur yang melintasi banyak sistem dan banyak kelompok fungsional di dalam enterprise", "Tingkat arsitektur tertinggi yang bisa dicapai dalam sebuah organisasi"], "answer": 2, "explanation": "Jawaban yang benar adalah opsi C."}, {"question": "Menurut TOGAF, manakah yang merupakan domain arsitektur yang umum diterima sebagai bagian dari keseluruhan enterprise architecture?", "options": ["Application, Business, Data, Technology", "Capability, Segment, Strategic", "Context, Definition, Governance, Transformation", "Definition, Realization, Transition, Vision"], "answer": 0, "explanation": "Jawaban yang benar adalah opsi A."}, {"question": "Manakah yang TIDAK benar tentang TOGAF?", "options": ["TOGAF adalah framework yang preskriptif dan digerakkan oleh artefak", "TOGAF adalah sebuah architecture framework", "TOGAF menyediakan metode dan alat untuk membantu penerimaan, pembuatan, penggunaan, dan pemeliharaan enterprise architecture", "TOGAF berbasis model proses iteratif yang didukung best practice dan kumpulan aset arsitektur yang bisa dipakai ulang"], "answer": 0, "explanation": "Jawaban yang benar adalah opsi A."}, {"question": "Manakah yang paling tepat menggambarkan implikasi dari TOGAF sebagai framework yang generik?", "options": ["Organisasi harus memakai alat (tool) arsitektur untuk menyesuaikan template yang dipakai", "Harus disesuaikan agar memenuhi kebutuhan spesifik organisasi", "Bisa dipakai oleh kebanyakan enterprise tanpa penyesuaian lebih lanjut", "Hanya bisa dipakai untuk proyek arsitektur tingkat enterprise"], "answer": 1, "explanation": "Jawaban yang benar adalah opsi B."}, {"question": "Manakah yang mendaftar komponen-komponen TOGAF?", "options": ["Administrative Development Methods, ADM Guideline & Technique, Architecture Content Framework, Enterprise Architecture Repository, Architecture Reference, Architecture Capability Framework", "Administrative Development Methods, ADM Guideline & Technique, Architecture Content Framework, Enterprise Continuum, Architecture Reference, Architecture Governance Framework", "Administrative Development Methods, ADM Guideline & Technique, Architecture Deliverable Framework, Enterprise Continuum, Architecture Reference, Architecture Capability Framework", "Administrative Development Methods, ADM Guideline & Technique, Architecture Content Management, Enterprise Continuum, Architecture Reference, Architecture Capability Framework"], "answer": 3, "explanation": "Jawaban yang benar adalah opsi D."}, {"question": "Komponen TOGAF manakah yang menyediakan proses yang teruji dan bisa diulang untuk mengembangkan arsitektur?", "options": ["TOGAF Reference Models", "Architecture Development Method", "ADM Guidelines and Techniques", "Architecture Capability Framework"], "answer": 1, "explanation": "Jawaban yang benar adalah opsi B."}, {"question": "Manakah yang menggambarkan aspek arsitektur yang umumnya diklasifikasikan menjadi katalog (daftar hal-hal), matriks (menunjukkan hubungan antarhal), dan diagram (gambar dari hal-hal)?", "options": ["Deliverables", "Building Block", "Artifact", "Model"], "answer": 2, "explanation": "Jawaban yang benar adalah opsi C."}, {"question": "Dalam TOGAF, apa perbedaan antara artifact dan deliverable?", "options": ["Sebuah artifact berisi satu atau lebih deliverable", "Deliverable disiapkan oleh Project Manager, sedangkan artifact ditentukan oleh Architect", "Deliverable bisa dipakai ulang, sedangkan artifact unik untuk satu proyek arsitektur", "Deliverable ditetapkan sebagai keluaran kontraktual dari sebuah proyek, sedangkan artifact tidak"], "answer": 3, "explanation": "Jawaban yang benar adalah opsi D."}, {"question": "Manakah domain arsitektur yang menjelaskan kemampuan software dan hardware secara logis?", "options": ["Application Architecture", "Business Architecture", "Data Architecture", "Technology Architecture"], "answer": 3, "explanation": "Jawaban yang benar adalah opsi D."}, {"question": "Manakah yang BUKAN elemen dari sebuah architecture framework?", "options": ["Kosakata yang sama (common vocabulary)", "Daftar standar yang direkomendasikan", "Seperangkat struktur yang bisa dipakai untuk mengembangkan berbagai macam arsitektur", "Metode siklus hidup pengembangan sistem untuk rekayasa perangkat lunak"], "answer": 3, "explanation": "Jawaban yang benar adalah opsi D."}, {"question": "Manakah yang menjelaskan metode klasifikasi untuk artifact arsitektur dan solusi di dalam Architecture Repository?", "options": ["Architecture Landscape", "Architecture Vision", "Enterprise Continuum", "Governance Log"], "answer": 2, "explanation": "Jawaban yang benar adalah opsi C."}, {"question": "Phase ADM manakah yang merupakan fase awal dari sebuah siklus pengembangan arsitektur?", "options": ["Preliminary Phase", "Phase A", "Phase B", "Phase C"], "answer": 1, "explanation": "Jawaban yang benar adalah opsi B."}, {"question": "Menurut TOGAF, dimensi yang direkomendasikan untuk menentukan cakupan (scope) sebuah arsitektur mencakup semua berikut ini, kecuali:", "options": ["Architecture Domains", "Enterprise Focus", "Level of Detail", "Subject Matter"], "answer": 3, "explanation": "Jawaban yang benar adalah opsi D."}, {"question": "Sebuah asosiasi perusahaan telah mendefinisikan model data untuk berbagi informasi persediaan dan harga. Manakah yang paling tepat menggambarkan posisi model ini dalam Architecture Continuum?", "options": ["Foundation Architecture", "Common Systems Architecture", "Industry Architecture", "Organization Specific Architecture"], "answer": 2, "explanation": "Jawaban yang benar adalah opsi C."}, {"question": "Dalam Solutions Continuum, manakah urutan solusi yang benar dari yang paling spesifik ke yang paling generik?", "options": ["Organization-Specific, Industry, Common Systems, Foundation", "Common Systems, Foundation, Industry, Organization-Specific", "Foundation, Common Systems, Industry, Organization-Specific", "Industry, Foundation, Common Systems, Organization-Specific"], "answer": 0, "explanation": "Jawaban yang benar adalah opsi A."}, {"question": "Manakah yang merupakan tujuan utama Phase A dari TOGAF ADM?", "options": ["Menyiapkan Solution Architecture untuk enterprise", "Menentukan strategi TI yang memetakan infrastruktur teknologi", "Mengalokasikan sumber daya yang dibutuhkan untuk mengimplementasikan proyek arsitektur", "Menyampaikan Architecture Vision"], "answer": 3, "explanation": "Jawaban yang benar adalah opsi D."}, {"question": "Dokumen apa yang dipakai untuk memulai siklus TOGAF ADM yang dibuat dari preliminary phase?", "options": ["Statement of Architecture Work", "Architecture Landscape", "Request for Architecture Work", "Architecture Vision"], "answer": 2, "explanation": "Jawaban yang benar adalah opsi C."}, {"question": "Manakah yang merupakan tujuan dari Preliminary Phase pada ADM?", "options": ["Menentukan, membatasi cakupan, dan memprioritaskan tugas-tugas arsitektur", "Menentukan prinsip-prinsip arsitektur", "Mengembangkan Target Business Architecture", "Mendapatkan komitmen manajemen untuk siklus ADM ini"], "answer": 1, "explanation": "Jawaban yang benar adalah opsi B."}, {"question": "Phase Requirements Management bertanggung jawab atas aktivitas yang mana?", "options": ["Menangani (addressing) requirement", "Membuang requirement yang sudah terselesaikan", "Mengelola aliran (flow) requirement", "Memprioritaskan requirement"], "answer": 2, "explanation": "Jawaban yang benar adalah opsi C."}, {"question": "Pernyataan mana yang TIDAK menggambarkan Architecture Principles dengan benar?", "options": ["Paling efektif ketika diterima dan dipakai di seluruh organisasi", "Berdasarkan prinsip-prinsip enterprise", "Merupakan kebijakan (policy) detail yang menentukan perilaku dan persyaratan", "Meskipun terlihat generik, prinsip ini harus disesuaikan agar mencerminkan budaya dan tujuan organisasi"], "answer": 2, "explanation": "Jawaban yang benar adalah opsi C."}, {"question": "Lengkapi kalimat berikut. Semua berikut ini adalah bagian dari template yang direkomendasikan untuk mendefinisikan Architecture Principles, kecuali ____", "options": ["Enforcement Policy", "Statement of Principle", "Rationale", "Implications"], "answer": 0, "explanation": "Jawaban yang benar adalah opsi A."}, {"question": "Lengkapi kalimat berikut. Tujuan utama Gap Analysis adalah untuk ____", "options": ["menetapkan parameter kualitas untuk arsitektur", "mengidentifikasi fungsi yang mungkin hilang atau tumpang tindih", "memvalidasi requirement nonfungsional", "mengidentifikasi building block komersial yang akan dibeli"], "answer": 1, "explanation": "Jawaban yang benar adalah opsi B."}, {"question": "Pasangan jawaban mana yang paling tepat melengkapi kalimat berikut? Architecture building blocks ____, sedangkan Solution Building blocks ____", "options": ["adalah komponen berfungsi tunggal; adalah kumpulan dari architecture building blocks", "bisa dipakai ulang; tidak bisa dipakai ulang", "menentukan arsitektur; menyediakan sistem legacy yang ada", "menentukan fungsionalitas; menentukan implementasi dari fungsionalitas tersebut"], "answer": 3, "explanation": "Jawaban yang benar adalah opsi D."}, {"question": "Pada phase ADM yang mana business principles, business goals, dan strategic drivers pertama kali divalidasi?", "options": ["Preliminary Phase", "Phase A", "Phase B", "Phase H"], "answer": 1, "explanation": "Jawaban yang benar adalah opsi B."}, {"question": "Manakah yang paling tepat menggambarkan kegunaan utama dokumen Architecture Vision?", "options": ["Daftar periksa (checklist) untuk review kepatuhan", "Alat untuk menghitung perkiraan biaya secara detail", "Alat untuk merencanakan proyek aktivitas implementasi", "Alat untuk “menjual” manfaat dari capability yang diusulkan kepada para stakeholder"], "answer": 3, "explanation": "Jawaban yang benar adalah opsi D."}, {"question": "Manakah yang BUKAN tujuan dari Phase B, Business Architecture?", "options": ["Menentukan Strategic Business Plan", "Menjelaskan Baseline Business Architecture", "Mengembangkan Target Business Architecture", "Memilih viewpoint yang relevan untuk stakeholder utama"], "answer": 0, "explanation": "Jawaban yang benar adalah opsi A."}, {"question": "Saat menentukan requirement untuk pekerjaan enterprise architecture di Preliminary Phase, manakah yang bukan merupakan business imperative yang perlu dipertimbangkan?", "options": ["Aspirasi budaya", "Perkiraan kebutuhan keuangan", "Strategic Intent", "Keanggunan teknis (technical elegance)"], "answer": 3, "explanation": "Jawaban yang benar adalah opsi D."}, {"question": "Phase ADM manakah yang merupakan aktivitas berkelanjutan yang dikunjungi sepanjang proyek arsitektur TOGAF?", "options": ["Architecture Change Management", "Implementation Governance", "Migration Planning", "Requirements Management"], "answer": 3, "explanation": "Jawaban yang benar adalah opsi D."}, {"question": "Manakah yang merupakan teknik yang direkomendasikan TOGAF untuk membantu mengidentifikasi dan memahami requirement?", "options": ["Business Scenarios", "Gap Analysis", "Mind Maps", "SWOT Analysis"], "answer": 0, "explanation": "Jawaban yang benar adalah opsi A."}];
+
+        let questions = [];
+        let currentIdx = 0;
+        let score = 0;
+        let userAnswers = [];
+        let timer = null;
+        let timeLeft = 30;
+        let isAnswered = false;
+
+        function startQuiz() {
+            questions = JSON.parse(JSON.stringify(rawQuestions));
+            shuffleArray(questions);
+            
+            currentIdx = 0;
+            score = 0;
+            userAnswers = new Array(questions.length).fill(null);
+
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.add('hidden');
+            document.getElementById('review-screen').classList.add('hidden');
+            document.getElementById('quiz-screen').classList.remove('hidden');
+            document.getElementById('quiz-header-info').classList.remove('hidden');
+
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            isAnswered = false;
+            clearInterval(timer);
+            timeLeft = 30;
+            document.getElementById('time-left').innerText = timeLeft;
+            document.getElementById('explanation-box').classList.add('hidden');
+            document.getElementById('next-btn').classList.add('hidden');
+
+            const q = questions[currentIdx];
+            document.getElementById('current-q-num').innerText = currentIdx + 1;
+            document.getElementById('total-q-num').innerText = questions.length;
+            document.getElementById('question-text').innerText = q.question;
+
+            const progressPct = ((currentIdx) / questions.length) * 100;
+            document.getElementById('progress-bar').style.width = progressPct + '%';
+            document.getElementById('progress-text').innerText = `Soal ${currentIdx + 1} dari ${questions.length}`;
+
+            let optionObjs = q.options.map((opt, idx) => ({ text: opt, originalIndex: idx }));
+            shuffleArray(optionObjs);
+
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = '';
+
+            optionObjs.forEach((optObj, i) => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-4 rounded-2xl bg-slate-800/50 hover:bg-slate-800 border border-slate-700/60 text-slate-200 text-sm sm:text-base font-medium transition-all cursor-pointer flex items-center space-x-3 group";
+                btn.innerHTML = `
+                    <span class="flex-shrink-0 w-8 h-8 rounded-xl bg-slate-700/50 text-slate-300 flex items-center justify-center font-bold text-xs group-hover:bg-indigo-600 group-hover:text-white transition-colors">${String.fromCharCode(65 + i)}</span>
+                    <span class="flex-grow">${optObj.text}</span>
+                `;
+                btn.onclick = () => selectAnswer(optObj.originalIndex, q.answer);
+                optionsContainer.appendChild(btn);
+            });
+
+            timer = setInterval(() => {
+                timeLeft--;
+                document.getElementById('time-left').innerText = timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    timeOutAnswer(q.answer);
+                }
+            }, 1000);
+        }
+
+        function selectAnswer(selectedIndex, correctIndex) {
+            if (isAnswered) return;
+            isAnswered = true;
+            clearInterval(timer);
+
+            userAnswers[currentIdx] = selectedIndex;
+
+            const buttons = document.getElementById('options-container').children;
+            
+            for (let btn of buttons) {
+                btn.disabled = true;
+                const textSpan = btn.querySelector('.flex-grow').innerText;
+                const q = questions[currentIdx];
+                const originalIdx = q.options.indexOf(textSpan);
+
+                if (originalIdx === correctIndex) {
+                    btn.className = "w-full text-left p-4 rounded-2xl bg-emerald-500/20 border border-emerald-500/50 text-emerald-200 text-sm sm:text-base font-medium flex items-center space-x-3";
+                } else if (originalIdx === selectedIndex && selectedIndex !== correctIndex) {
+                    btn.className = "w-full text-left p-4 rounded-2xl bg-rose-500/20 border border-rose-500/50 text-rose-200 text-sm sm:text-base font-medium flex items-center space-x-3";
+                } else {
+                    btn.className = "w-full text-left p-4 rounded-2xl bg-slate-800/20 border border-slate-800 text-slate-500 text-sm sm:text-base font-medium flex items-center space-x-3 opacity-50";
+                }
+            }
+
+            if (selectedIndex === correctIndex) {
+                score++;
+            }
+
+            showExplanation();
+        }
+
+        function timeOutAnswer(correctIndex) {
+            if (isAnswered) return;
+            isAnswered = true;
+            userAnswers[currentIdx] = null;
+
+            const buttons = document.getElementById('options-container').children;
+            for (let btn of buttons) {
+                btn.disabled = true;
+                const textSpan = btn.querySelector('.flex-grow').innerText;
+                const q = questions[currentIdx];
+                const originalIdx = q.options.indexOf(textSpan);
+
+                if (originalIdx === correctIndex) {
+                    btn.className = "w-full text-left p-4 rounded-2xl bg-emerald-500/20 border border-emerald-500/50 text-emerald-200 text-sm sm:text-base font-medium flex items-center space-x-3";
+                } else {
+                    btn.className = "w-full text-left p-4 rounded-2xl bg-slate-800/20 border border-slate-800 text-slate-500 text-sm sm:text-base font-medium flex items-center space-x-3 opacity-50";
+                }
+            }
+
+            showExplanation();
+        }
+
+        function showExplanation() {
+            const q = questions[currentIdx];
+            document.getElementById('explanation-text').innerText = q.explanation;
+            document.getElementById('explanation-box').classList.remove('hidden');
+            
+            const nextBtn = document.getElementById('next-btn');
+            nextBtn.classList.remove('hidden');
+            if (currentIdx === questions.length - 1) {
+                nextBtn.innerText = "Lihat Hasil 🎉";
+            } else {
+                nextBtn.innerText = "Soal Selanjutnya ➔";
+            }
+        }
+
+        function nextQuestion() {
+            currentIdx++;
+            if (currentIdx < questions.length) {
+                loadQuestion();
+            } else {
+                showResult();
+            }
+        }
+
+        function showResult() {
+            document.getElementById('quiz-screen').classList.add('hidden');
+            document.getElementById('quiz-header-info').classList.add('hidden');
+            document.getElementById('result-screen').classList.remove('hidden');
+
+            const percent = Math.round((score / questions.length) * 100);
+            document.getElementById('final-score-percent').innerText = percent + '%';
+            document.getElementById('final-correct').innerText = score;
+            document.getElementById('final-wrong').innerText = questions.length - score;
+
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 }
+            });
+        }
+
+        function restartQuiz() {
+            startQuiz();
+        }
+
+        function showReviewScreen() {
+            document.getElementById('result-screen').classList.add('hidden');
+            document.getElementById('review-screen').classList.remove('hidden');
+
+            const reviewList = document.getElementById('review-list');
+            reviewList.innerHTML = '';
+
+            questions.forEach((q, idx) => {
+                const userAns = userAnswers[idx];
+                const correctAns = q.answer;
+                const isCorrect = userAns === correctAns;
+
+                const itemDiv = document.createElement('div');
+                itemDiv.className = `p-4 rounded-2xl border ${isCorrect ? 'bg-emerald-500/5 border-emerald-500/30' : 'bg-rose-500/5 border-rose-500/30'} space-y-2`;
+                
+                let optionsHtml = '';
+                q.options.forEach((opt, oIdx) => {
+                    let badgeClass = "text-slate-400";
+                    if (oIdx === correctAns) {
+                        badgeClass = "text-emerald-400 font-bold";
+                    } else if (oIdx === userAns && !isCorrect) {
+                        badgeClass = "text-rose-400 font-bold line-through";
+                    }
+                    optionsHtml += `<div class="text-xs sm:text-sm ${badgeClass}">• ${opt} ${oIdx === correctAns ? '(Benar)' : ''} ${oIdx === userAns && oIdx !== correctAns ? '(Pilihanmu)' : ''}</div>`;
+                });
+
+                itemDiv.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <span class="text-xs font-bold text-indigo-400">Soal ${idx + 1}</span>
+                        <span class="text-xs font-semibold ${isCorrect ? 'text-emerald-400' : 'text-rose-400'}">${isCorrect ? '✅ Benar' : '❌ Salah / Kosong'}</span>
+                    </div>
+                    <p class="text-sm sm:text-base font-semibold text-white">${q.question}</p>
+                    <div class="space-y-1 pl-2 border-l-2 border-slate-700">
+                        ${optionsHtml}
+                    </div>
+                    <p class="text-xs text-slate-400 pt-1 italic">💡 ${q.explanation}</p>
+                `;
+                reviewList.appendChild(itemDiv);
+            });
+        }
+
+        function backToResult() {
+            document.getElementById('review-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.remove('hidden');
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+    </script>
+</body>
+</html>
